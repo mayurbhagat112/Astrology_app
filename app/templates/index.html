@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astrological Chart Generator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e9ecef;
+            color: #333;
+        }
+        .header {
+            background: linear-gradient(90deg, #6a11cb, #2575fc);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        .loading {
+            display: none;
+        }
+        #chart-result {
+            margin-top: 20px;
+        }
+        .card {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .summary-card, .positions-card {
+            margin-top: 20px;
+            background-color: #fff;
+            border-left: 5px solid #6a11cb;
+        }
+        .form-control:focus {
+            border-color: #2575fc;
+            box-shadow: 0 0 0.2rem rgba(37, 117, 252, 0.25);
+        }
+        .btn-primary {
+            background-color: #6a11cb;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #2575fc;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <header class="header text-center">
+        <h1>Astrological Chart Generator</h1>
+    </header>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <form id="chart-form" class="card p-4">
+                    <div class="form-group mb-3">
+                        <label for="date" class="form-label">Select Date:</label>
+                        <input type="text" id="date" class="form-control" required placeholder="Select Date">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="time" class="form-label">Select Time:</label>
+                        <div class="row">
+                            <div class="col">
+                                <select id="hour" class="form-select" required>
+                                    <option value="" disabled selected>Hour</option>
+                                    <!-- Hours 1-12 -->
+                                    <script>
+                                        for (let i = 1; i <= 12; i++) {
+                                            document.write(`<option value="${i}">${i}</option>`);
+                                        }
+                                    </script>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <select id="minute" class="form-select" required>
+                                    <option value="" disabled selected>Minute</option>
+                                    <!-- Minutes 0-59 -->
+                                    <script>
+                                        for (let i = 0; i < 60; i += 5) {
+                                            document.write(`<option value="${i}">${i < 10 ? '0' + i : i}</option>`);
+                                        }
+                                    </script>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <select id="ampm" class="form-select" required>
+                                    <option value="" disabled selected>AM/PM</option>
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Generate Chart</button>
+                </form>
+
+                <div id="loading" class="text-center mt-3 loading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Generating your astrological chart...</p>
+                </div>
+
+                <div id="chart-result">
+                    <div class="card chart-card p-4">
+                        <h2 class="card-title">Astrological Chart</h2>
+                        <img id="chart-image" src="" alt="Astrological Chart" class="img-fluid rounded" />
+                    </div>
+
+                    <div class="card summary-card p-4">
+                        <h3 class="card-title">Astrological Summary</h3>
+                        <p id="summary"></p>
+                    </div>
+
+                    <div class="card positions-card p-4">
+                        <h3 class="card-title">Planetary Positions</h3>
+                        <pre id="positions" class="bg-light p-3 rounded"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer text-center mt-5">
+        <p>&copy; 2025 Astrology App. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        // Initialize flatpickr for the date input
+        flatpickr("#date", {
+            dateFormat: "Y-m-d",
+            enableTime: false,
+            allowInput: true,
+        });
+
+        document.getElementById('chart-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const date = document.getElementById('date').value;
+            const hour = document.getElementById('hour').value;
+            const minute = document.getElementById('minute').value;
+            const ampm = document.getElementById('ampm').value;
+            const loadingIndicator = document.getElementById('loading');
+            loadingIndicator.style.display = 'block'; // Show loading
+
+            // Create the dateTime string in a format suitable for your backend
+            let hour24 = hour; // Use the selected hour
+            if (ampm === 'PM' && hour < 12) {
+                hour24 = parseInt(hour) + 12; // Convert PM hour to 24-hour format
+            } else if (ampm === 'AM' && hour == 12) {
+                hour24 = '00'; // Convert 12 AM to 00
+            }
+            const dateTime = `${date}T${hour24.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+
+            const response = await fetch('/get_chart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date_time: dateTime })
+            });
+
+            const result = await response.json();
+            loadingIndicator.style.display = 'none'; // Hide loading
+
+            if (result.chart) {
+                document.getElementById('chart-image').src = 'data:image/png;base64,' + result.chart;
+            } else {
+                document.getElementById('chart-image').src = '';
+            }
+
+            if (result.summary) {
+                document.getElementById('summary').innerText = result.summary;
+            } else {
+                document.getElementById('summary').innerText = 'No summary available.';
+            }
+
+            if (result.positions) {
+                document.getElementById('positions').innerText = JSON.stringify(result.positions, null, 2);
+            } else {
+                document.getElementById('positions').innerText = 'No planetary positions available.';
+            }
+
+            if (result.error) {
+                alert(`Error: ${result.error}`);
+            }
+        });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
